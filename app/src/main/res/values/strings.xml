@@ -18,10 +18,13 @@
     <string name="home_location_permission_message">Turn on location access to see weather for where you are.</string>
     <string name="home_location_enable">Enable</string>
     <string name="home_location_open_settings">Settings</string>
+    <string name="home_log_in">Log In</string>
+    <string name="home_create_account">Create Account</string>
 
     <!-- Actions -->
     <string name="action_back">Back</string>
     <string name="action_retry">Retry</string>
+    <string name="action_coming_soon">Coming soon</string>
 
     <!-- Errors -->
     <string name="error_network">No internet connection</string>
