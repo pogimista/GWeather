@@ -81,6 +81,11 @@ abstract class BaseViewModel(
         viewModelScope.launch { _navigationEvent.emit(NavigationEvent.BackToRoot) }
     }
 
+    /** Navigates to [key], clearing the whole back stack so [key] becomes the new (only) root. */
+    fun navigateAsRoot(key: BaseKey) {
+        viewModelScope.launch { _navigationEvent.emit(NavigationEvent.ReplaceAll(key)) }
+    }
+
     fun <T : Any> navigateBackWithResult(data: T) {
         viewModelScope.launch {
             screenResultBus.emit(ScreenResult(data))

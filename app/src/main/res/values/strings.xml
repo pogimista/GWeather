@@ -27,6 +27,7 @@
     <string name="action_coming_soon">Coming soon</string>
 
     <!-- Errors -->
+    <string name="error_location_unavailable">Couldn\'t determine your location. Please try again.</string>
     <string name="error_network">No internet connection</string>
     <string name="error_not_found">Not found</string>
     <string name="error_unauthorized">Unauthorized access</string>

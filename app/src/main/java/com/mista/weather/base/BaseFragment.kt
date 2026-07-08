@@ -83,6 +83,9 @@ abstract class BaseFragment<VM : BaseViewModel> : Fragment() {
                 val root = backstack.getHistory<BaseKey>().firstOrNull() ?: return
                 backstack.setHistory(History.of(root), StateChange.BACKWARD)
             }
+            is NavigationEvent.ReplaceAll -> {
+                backstack.setHistory(History.of(event.key), StateChange.FORWARD)
+            }
         }
     }
 

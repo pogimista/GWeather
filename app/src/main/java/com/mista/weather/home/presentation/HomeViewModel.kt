@@ -5,12 +5,12 @@ import android.app.Application
 import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewModelScope
+import com.mista.weather.R
 import com.mista.weather.base.BaseUseCase
 import com.mista.weather.base.BaseViewModel
 import com.mista.weather.base.BaseViewModelDeps
 import com.mista.weather.base.error.toAppError
 import com.mista.weather.home.data.WeatherHistoryRepository
-import com.mista.weather.home.domain.Coordinates
 import com.mista.weather.home.domain.GetCurrentWeatherUseCase
 import com.mista.weather.home.domain.GetDeviceLocationUseCase
 import com.mista.weather.home.domain.WeatherHistoryEntry
@@ -46,9 +46,17 @@ class HomeViewModel(
     }
 
     private fun loadWeather() {
+        if (!hasLocationPermission()) {
+            _weatherState.value = HomeUiState.PermissionRequired
+            return
+        }
         viewModelScope.launch {
             _weatherState.value = HomeUiState.Loading
-            val coordinates = resolveCoordinates()
+            val coordinates = getDeviceLocationUseCase(BaseUseCase.NoParams).getOrNull()
+            if (coordinates == null) {
+                _weatherState.value = HomeUiState.Error(getLocalString(R.string.error_location_unavailable))
+                return@launch
+            }
             getCurrentWeatherUseCase(coordinates)
                 .onSuccess { weather ->
                     _weatherState.value = HomeUiState.Success(weather)
@@ -59,18 +67,9 @@ class HomeViewModel(
         }
     }
 
-    private suspend fun resolveCoordinates(): Coordinates {
-        if (!hasLocationPermission()) return DEFAULT_COORDINATES
-        return getDeviceLocationUseCase(BaseUseCase.NoParams).getOrNull() ?: DEFAULT_COORDINATES
-    }
-
     private fun hasLocationPermission(): Boolean {
         val context = getApplication<Application>()
         return ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
             ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
-    }
-
-    private companion object {
-        val DEFAULT_COORDINATES = Coordinates(lat = 44.34, lon = 10.99)
     }
 }

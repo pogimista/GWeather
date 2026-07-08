@@ -31,6 +31,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -83,19 +84,20 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun `uses the default coordinates when location permission is not granted`() = runTest(testDispatcher) {
+    fun `shows PermissionRequired and never calls the weather repository when permission is not granted`() = runTest(testDispatcher) {
         stubPermission(granted = false)
         val weatherRepository = FakeWeatherRepository(Result.success(testWeather()))
 
-        buildViewModel(weatherRepository = weatherRepository)
+        val viewModel = buildViewModel(weatherRepository = weatherRepository)
         advanceUntilIdle()
 
-        assertEquals(44.34, weatherRepository.lastLat!!, 0.0)
-        assertEquals(10.99, weatherRepository.lastLon!!, 0.0)
+        assertEquals(HomeUiState.PermissionRequired, viewModel.weatherState.value)
+        assertEquals(0, weatherRepository.callCount)
+        assertNull(weatherRepository.lastLat)
     }
 
     @Test
-    fun `uses the device location when permission is granted and a fix is available`() = runTest(testDispatcher) {
+    fun `fetches weather for the device location when permission is granted and a fix is available`() = runTest(testDispatcher) {
         stubPermission(granted = true)
         val weatherRepository = FakeWeatherRepository(Result.success(testWeather()))
 
@@ -110,24 +112,31 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun `falls back to default coordinates when permission is granted but no fix is available`() = runTest(testDispatcher) {
+    fun `shows a location-unavailable error when permission is granted but no fix is available`() = runTest(testDispatcher) {
         stubPermission(granted = true)
+        every { application.getString(R.string.error_location_unavailable) } returns "Couldn't determine your location."
         val weatherRepository = FakeWeatherRepository(Result.success(testWeather()))
 
-        buildViewModel(weatherRepository = weatherRepository, deviceCoordinates = null)
+        val viewModel = buildViewModel(weatherRepository = weatherRepository, deviceCoordinates = null)
         advanceUntilIdle()
 
-        assertEquals(44.34, weatherRepository.lastLat!!, 0.0)
-        assertEquals(10.99, weatherRepository.lastLon!!, 0.0)
+        val state = viewModel.weatherState.value
+        assertTrue(state is HomeUiState.Error)
+        assertEquals("Couldn't determine your location.", (state as HomeUiState.Error).message)
+        assertEquals(0, weatherRepository.callCount)
     }
 
     @Test
     fun `a successful fetch publishes Success and records a history entry`() = runTest(testDispatcher) {
-        stubPermission(granted = false)
+        stubPermission(granted = true)
         val weather = testWeather(cityName = "Bologna")
         val historyRepository = FakeWeatherHistoryRepository()
 
-        val viewModel = buildViewModel(weatherResult = Result.success(weather), historyRepository = historyRepository)
+        val viewModel = buildViewModel(
+            weatherResult = Result.success(weather),
+            deviceCoordinates = Coordinates(lat = 44.49, lon = 11.34),
+            historyRepository = historyRepository,
+        )
         advanceUntilIdle()
 
         val state = viewModel.weatherState.value
@@ -139,10 +148,13 @@ class HomeViewModelTest {
 
     @Test
     fun `a failed fetch publishes an Error state with a mapped message`() = runTest(testDispatcher) {
-        stubPermission(granted = false)
+        stubPermission(granted = true)
         every { application.getString(R.string.error_network) } returns "No internet connection"
 
-        val viewModel = buildViewModel(weatherResult = Result.failure(IOException("boom")))
+        val viewModel = buildViewModel(
+            weatherResult = Result.failure(IOException("boom")),
+            deviceCoordinates = Coordinates(lat = 44.49, lon = 11.34),
+        )
         advanceUntilIdle()
 
         val state = viewModel.weatherState.value
@@ -152,10 +164,13 @@ class HomeViewModelTest {
 
     @Test
     fun `retry re-fetches the weather`() = runTest(testDispatcher) {
-        stubPermission(granted = false)
+        stubPermission(granted = true)
         val weatherRepository = FakeWeatherRepository(Result.success(testWeather()))
 
-        val viewModel = buildViewModel(weatherRepository = weatherRepository)
+        val viewModel = buildViewModel(
+            weatherRepository = weatherRepository,
+            deviceCoordinates = Coordinates(lat = 44.49, lon = 11.34),
+        )
         advanceUntilIdle()
         viewModel.retry()
         advanceUntilIdle()
@@ -164,14 +179,14 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun `granting location permission after denial switches to the device location on the next load`() = runTest(testDispatcher) {
+    fun `granting location permission after denial fetches weather for the device location`() = runTest(testDispatcher) {
         stubPermission(granted = false)
         val weatherRepository = FakeWeatherRepository(Result.success(testWeather()))
         val locationProvider = FakeLocationProvider(coordinates = Coordinates(lat = 51.5, lon = -0.12))
 
         val viewModel = buildViewModel(weatherRepository = weatherRepository, locationProvider = locationProvider)
         advanceUntilIdle()
-        assertEquals(44.34, weatherRepository.lastLat!!, 0.0)
+        assertEquals(HomeUiState.PermissionRequired, viewModel.weatherState.value)
 
         stubPermission(granted = true)
         viewModel.onLocationPermissionResult(true)
@@ -180,5 +195,18 @@ class HomeViewModelTest {
         assertEquals(51.5, weatherRepository.lastLat!!, 0.0)
         assertEquals(-0.12, weatherRepository.lastLon!!, 0.0)
         assertTrue(viewModel.locationPermissionGranted.value)
+    }
+
+    @Test
+    fun `denying location permission again after a grant goes back to PermissionRequired`() = runTest(testDispatcher) {
+        stubPermission(granted = false)
+        val viewModel = buildViewModel()
+        advanceUntilIdle()
+
+        viewModel.onLocationPermissionResult(false)
+        advanceUntilIdle()
+
+        assertEquals(HomeUiState.PermissionRequired, viewModel.weatherState.value)
+        assertTrue(!viewModel.locationPermissionGranted.value)
     }
 }

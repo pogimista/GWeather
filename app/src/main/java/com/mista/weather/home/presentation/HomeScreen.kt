@@ -107,7 +107,6 @@ fun HomeScreen(
                     0 -> CurrentWeatherTab(
                         state = weatherState,
                         onRetry = viewModel::retry,
-                        showLocationPrompt = !locationPermissionGranted,
                         permanentlyDenied = permanentlyDenied,
                         onRequestLocation = {
                             permissionLauncher.launch(

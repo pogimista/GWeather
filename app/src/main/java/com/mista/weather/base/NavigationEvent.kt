@@ -9,4 +9,6 @@ sealed class NavigationEvent {
     data class BackTo(val key: BaseKey, val inclusive: Boolean = false) : NavigationEvent()
 
     object BackToRoot : NavigationEvent()
+
+    data class ReplaceAll(val key: BaseKey) : NavigationEvent()
 }

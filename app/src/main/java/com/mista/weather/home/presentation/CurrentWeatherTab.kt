@@ -1,11 +1,6 @@
 package com.mista.weather.home.presentation
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,7 +18,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,7 +36,6 @@ import com.mista.weather.ui.theme.AppFonts
 fun CurrentWeatherTab(
     state: HomeUiState,
     onRetry: () -> Unit,
-    showLocationPrompt: Boolean,
     permanentlyDenied: Boolean,
     onRequestLocation: () -> Unit,
     onOpenSettings: () -> Unit,
@@ -50,45 +43,37 @@ fun CurrentWeatherTab(
 ) {
     val colors = AppColors.colors
 
-    Column(modifier = modifier.fillMaxSize()) {
-        AnimatedVisibility(
-            visible = showLocationPrompt,
-            enter = fadeIn() + expandVertically(),
-            exit = fadeOut() + shrinkVertically(),
-        ) {
-            LocationPermissionBanner(
-                permanentlyDenied = permanentlyDenied,
-                onEnableLocation = onRequestLocation,
-                onOpenSettings = onOpenSettings,
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
-            )
-        }
-
-        Box(modifier = Modifier.fillMaxSize()) {
-            Crossfade(targetState = state, label = "current_weather_state") { current ->
-                when (current) {
-                    is HomeUiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = colors.primary)
-                    }
-
-                    is HomeUiState.Success -> WeatherContent(
-                        weather = current.weather,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-
-                    is HomeUiState.Error -> ErrorContent(
-                        message = current.message,
-                        onRetry = onRetry,
-                        modifier = Modifier.fillMaxSize(),
-                    )
+    Box(modifier = modifier.fillMaxSize()) {
+        Crossfade(targetState = state, label = "current_weather_state") { current ->
+            when (current) {
+                is HomeUiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = colors.primary)
                 }
+
+                is HomeUiState.PermissionRequired -> LocationPermissionEmptyState(
+                    permanentlyDenied = permanentlyDenied,
+                    onEnableLocation = onRequestLocation,
+                    onOpenSettings = onOpenSettings,
+                    modifier = Modifier.fillMaxSize(),
+                )
+
+                is HomeUiState.Success -> WeatherContent(
+                    weather = current.weather,
+                    modifier = Modifier.fillMaxSize(),
+                )
+
+                is HomeUiState.Error -> ErrorContent(
+                    message = current.message,
+                    onRetry = onRetry,
+                    modifier = Modifier.fillMaxSize(),
+                )
             }
         }
     }
 }
 
 @Composable
-private fun LocationPermissionBanner(
+private fun LocationPermissionEmptyState(
     permanentlyDenied: Boolean,
     onEnableLocation: () -> Unit,
     onOpenSettings: () -> Unit,
@@ -96,30 +81,29 @@ private fun LocationPermissionBanner(
 ) {
     val colors = AppColors.colors
 
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(colors.backgroundSecondary)
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    Column(
+        modifier = modifier.padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
     ) {
-        Text(text = "📍", fontSize = 24.sp)
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(2.dp),
+        Text(text = "📍", fontSize = 64.sp)
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = stringResource(R.string.home_location_permission_title),
+            style = AppFonts.semiBold.copy(color = colors.textPrimary, fontSize = 20.sp),
+            textAlign = TextAlign.Center,
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = stringResource(R.string.home_location_permission_message),
+            style = AppFonts.regular.copy(color = colors.textSecondary),
+            textAlign = TextAlign.Center,
+        )
+        Spacer(modifier = Modifier.height(24.dp))
+        Button(
+            onClick = if (permanentlyDenied) onOpenSettings else onEnableLocation,
+            colors = ButtonDefaults.buttonColors(containerColor = colors.primary),
         ) {
-            Text(
-                text = stringResource(R.string.home_location_permission_title),
-                style = AppFonts.semiBold.copy(color = colors.textPrimary),
-            )
-            Text(
-                text = stringResource(R.string.home_location_permission_message),
-                style = AppFonts.regular.copy(color = colors.textSecondary, fontSize = 12.sp),
-            )
-        }
-        TextButton(onClick = if (permanentlyDenied) onOpenSettings else onEnableLocation) {
             Text(
                 text = stringResource(
                     if (permanentlyDenied) R.string.home_location_open_settings else R.string.home_location_enable,
