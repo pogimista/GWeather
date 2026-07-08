@@ -36,7 +36,7 @@ import com.mista.weather.ui.theme.AppFonts
 fun CurrentWeatherTab(
     state: HomeUiState,
     onRetry: () -> Unit,
-    permanentlyDenied: Boolean,
+    showOpenSettings: Boolean,
     onRequestLocation: () -> Unit,
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
@@ -51,7 +51,7 @@ fun CurrentWeatherTab(
                 }
 
                 is HomeUiState.PermissionRequired -> LocationPermissionEmptyState(
-                    permanentlyDenied = permanentlyDenied,
+                    showOpenSettings = showOpenSettings,
                     onEnableLocation = onRequestLocation,
                     onOpenSettings = onOpenSettings,
                     modifier = Modifier.fillMaxSize(),
@@ -74,7 +74,7 @@ fun CurrentWeatherTab(
 
 @Composable
 private fun LocationPermissionEmptyState(
-    permanentlyDenied: Boolean,
+    showOpenSettings: Boolean,
     onEnableLocation: () -> Unit,
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
@@ -101,12 +101,12 @@ private fun LocationPermissionEmptyState(
         )
         Spacer(modifier = Modifier.height(24.dp))
         Button(
-            onClick = if (permanentlyDenied) onOpenSettings else onEnableLocation,
+            onClick = if (showOpenSettings) onOpenSettings else onEnableLocation,
             colors = ButtonDefaults.buttonColors(containerColor = colors.primary),
         ) {
             Text(
                 text = stringResource(
-                    if (permanentlyDenied) R.string.home_location_open_settings else R.string.home_location_enable,
+                    if (showOpenSettings) R.string.home_location_open_settings else R.string.home_location_enable,
                 ),
             )
         }

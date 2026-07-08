@@ -12,6 +12,7 @@ import com.mista.weather.home.domain.GetDeviceLocationUseCase
 import com.mista.weather.home.domain.Weather
 import com.mista.weather.session.CacheSession
 import com.mista.weather.session.TransientSession
+import com.mista.weather.testutil.FakeCacheWrapper
 import com.mista.weather.testutil.FakeLocationProvider
 import com.mista.weather.testutil.FakeWeatherHistoryRepository
 import com.mista.weather.testutil.FakeWeatherRepository
@@ -31,6 +32,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -67,10 +69,14 @@ class HomeViewModelTest {
         weatherRepository: FakeWeatherRepository = FakeWeatherRepository(weatherResult),
         locationProvider: FakeLocationProvider = FakeLocationProvider(deviceCoordinates),
         historyRepository: FakeWeatherHistoryRepository = FakeWeatherHistoryRepository(),
+        locationPermissionRequestedBefore: Boolean? = null,
     ): HomeViewModel {
+        val cacheSession = mockk<CacheSession>(relaxed = true) {
+            every { locationPermissionRequested } returns FakeCacheWrapper(locationPermissionRequestedBefore)
+        }
         val deps = BaseViewModelDeps(
             application = application,
-            cacheSession = mockk<CacheSession>(relaxed = true),
+            cacheSession = cacheSession,
             transientSession = TransientSession(),
             moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build(),
             screenResultBus = ScreenResultBus(),
@@ -208,5 +214,38 @@ class HomeViewModelTest {
 
         assertEquals(HomeUiState.PermissionRequired, viewModel.weatherState.value)
         assertTrue(!viewModel.locationPermissionGranted.value)
+    }
+
+    @Test
+    fun `showOpenSettings starts true when permission was already denied in an earlier app session`() = runTest(testDispatcher) {
+        stubPermission(granted = false)
+
+        val viewModel = buildViewModel(locationPermissionRequestedBefore = true)
+        advanceUntilIdle()
+
+        assertTrue(viewModel.showOpenSettings.value)
+    }
+
+    @Test
+    fun `showOpenSettings starts false on a first-ever launch even though permission is currently denied`() = runTest(testDispatcher) {
+        stubPermission(granted = false)
+
+        val viewModel = buildViewModel(locationPermissionRequestedBefore = null)
+        advanceUntilIdle()
+
+        assertFalse(viewModel.showOpenSettings.value)
+    }
+
+    @Test
+    fun `denying the permission persists the requested flag so showOpenSettings flips to true`() = runTest(testDispatcher) {
+        stubPermission(granted = false)
+        val viewModel = buildViewModel(locationPermissionRequestedBefore = null)
+        advanceUntilIdle()
+        assertFalse(viewModel.showOpenSettings.value)
+
+        viewModel.onLocationPermissionResult(false)
+        advanceUntilIdle()
+
+        assertTrue(viewModel.showOpenSettings.value)
     }
 }

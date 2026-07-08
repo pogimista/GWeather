@@ -18,9 +18,13 @@ class CacheSession(
         Types.newParameterizedType(List::class.java, String::class.java),
     )
 
+    /** Whether the location permission has ever been requested, surviving process/app restarts. */
+    var locationPermissionRequested: CacheWrapper<Boolean> = createCache(KEY_LOCATION_PERMISSION_REQUESTED, Boolean::class.java)
+
     fun clearAll() {
         userId.clear()
         searchHistory.clear()
+        locationPermissionRequested.clear()
         transientSession.clearAll()
     }
 
@@ -35,5 +39,6 @@ class CacheSession(
     companion object {
         private const val KEY_USER_ID = "key_user_id"
         private const val KEY_SEARCH_HISTORY = "key_search_history"
+        private const val KEY_LOCATION_PERMISSION_REQUESTED = "key_location_permission_requested"
     }
 }

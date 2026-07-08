@@ -34,6 +34,14 @@ class HomeViewModel(
     private val _locationPermissionGranted = MutableStateFlow(hasLocationPermission())
     val locationPermissionGranted = _locationPermissionGranted.asStateFlow()
 
+    // Persisted across app restarts, so a permission denied in an earlier session is still
+    // remembered - otherwise a fresh cold start would offer to re-prompt via the system dialog
+    // even though the OS will silently no-op it, since it's already been asked before.
+    private val _showOpenSettings = MutableStateFlow(
+        cacheSession.locationPermissionRequested.value == true && !hasLocationPermission(),
+    )
+    val showOpenSettings = _showOpenSettings.asStateFlow()
+
     init {
         loadWeather()
     }
@@ -41,7 +49,9 @@ class HomeViewModel(
     fun retry() = loadWeather()
 
     fun onLocationPermissionResult(granted: Boolean) {
+        cacheSession.locationPermissionRequested.value = true
         _locationPermissionGranted.value = granted
+        _showOpenSettings.value = !granted
         loadWeather()
     }
 
