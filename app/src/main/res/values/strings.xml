@@ -3,6 +3,11 @@
 
     <!-- Home -->
     <string name="home_placeholder_title">Weather</string>
+    <string name="home_temperature">%1$.0f°C</string>
+    <string name="home_feels_like">Feels like %1$.0f°C</string>
+    <string name="home_humidity">Humidity: %1$d%%</string>
+    <string name="home_wind">Wind: %1$.1f m/s</string>
+    <string name="home_location">%1$s, %2$s</string>
 
     <!-- Actions -->
     <string name="action_back">Back</string>

@@ -1,9 +1,22 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     id("kotlin-parcelize")
 }
+
+// OpenWeatherMap API key: set OPEN_WEATHER_API_KEY in local.properties (not committed to VCS)
+// or as an OPEN_WEATHER_API_KEY environment variable (e.g. on CI).
+val localProperties = Properties().apply {
+    val localPropertiesFile = rootProject.file("local.properties")
+    if (localPropertiesFile.exists()) {
+        localPropertiesFile.inputStream().use { load(it) }
+    }
+}
+val openWeatherApiKey: String =
+    (localProperties.getProperty("OPEN_WEATHER_API_KEY") ?: System.getenv("OPEN_WEATHER_API_KEY")).orEmpty()
 
 android {
     namespace = "com.mista.weather"
@@ -12,11 +25,14 @@ android {
     defaultConfig {
         applicationId = "com.mista.weather"
         minSdk = 24
+
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField("String", "OPEN_WEATHER_API_KEY", "\"$openWeatherApiKey\"")
     }
 
     buildTypes {
@@ -37,6 +53,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
