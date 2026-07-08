@@ -57,6 +57,11 @@ android {
     }
 }
 
+// mockk's static/object mocking needs to self-attach a Java agent; recent JDKs require this opt-in.
+tasks.withType<Test> {
+    jvmArgs("-Djdk.attach.allowAttachSelf=true")
+}
+
 dependencies {
 
     implementation(libs.androidx.core.ktx)
@@ -83,6 +88,8 @@ dependencies {
     implementation(libs.compose.shimmer)
 
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.mockk)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))

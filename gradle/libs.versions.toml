@@ -16,6 +16,8 @@ moshi = "1.15.2"
 simpleStack = "2.8.0"
 simpleStackExtensions = "2.3.4"
 composeShimmer = "1.3.1"
+kotlinxCoroutinesTest = "1.9.0"
+mockk = "1.13.13"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -46,6 +48,8 @@ moshi-kotlin = { group = "com.squareup.moshi", name = "moshi-kotlin", version.re
 simple-stack = { group = "com.github.Zhuinden", name = "simple-stack", version.ref = "simpleStack" }
 simple-stack-extensions = { group = "com.github.Zhuinden", name = "simple-stack-extensions", version.ref = "simpleStackExtensions" }
 compose-shimmer = { group = "com.valentinilk.shimmer", name = "compose-shimmer", version.ref = "composeShimmer" }
+kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "kotlinxCoroutinesTest" }
+mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
